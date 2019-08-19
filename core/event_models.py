@@ -1,21 +1,26 @@
 import tensorflow as tf
 import numpy as np
-from utils import unroll_data
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Activation, SimpleRNN, GRU, Dropout, LSTM, LeakyReLU, Lambda
-from keras.initializers import glorot_uniform  # Or your initializer of choice
-from keras import regularizers
-from keras.optimizers import *
-from models.utils import fast_mvnorm_diagonal_logprob
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Activation, SimpleRNN, GRU, Dropout, LSTM, LeakyReLU, Lambda
+from tensorflow.keras.initializers import glorot_uniform  # Or your initializer of choice
+from tensorflow.keras import regularizers
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.backend import l2_normalize
+from core.utils import fast_mvnorm_diagonal_logprob, unroll_data
 
 print("TensorFlow Version: {}".format(tf.__version__))
-print("Keras      Version: {}".format(keras.__version__))
+# print("Keras      Version: {}".format(keras.__version__))
 
-config = tf.ConfigProto()
-config.intra_op_parallelism_threads = 4
-config.inter_op_parallelism_threads = 4
-tf.Session(config=config)
+
+## Do we need this code?
+# config = tf.ConfigProto()
+# config.intra_op_parallelism_threads = 4
+# config.inter_op_parallelism_threads = 4
+# tf.Session(config=config)
+
+### there are a ~ton~ of tf warnings from Keras, suppress them here
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 # run a check that tensorflow works on import
@@ -24,9 +29,9 @@ def check_tf():
     b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b')
     c = tf.matmul(a, b)
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         sess.run(c)
-    print "TensorFlow Check Passed"
+    print("TensorFlow Check Passed")
 check_tf()
 
 
@@ -349,7 +354,7 @@ class NonLinearEvent(LinearEvent):
         self.model.add(Dense(self.n_hidden, input_shape=(self.d,), activation=self.hidden_act,
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate=1-self.dropout))
         self.model.add(Dense(self.d, activation='linear',
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
@@ -383,11 +388,11 @@ class NonLinearEvent_normed(NonLinearEvent):
         self.model.add(Dense(self.n_hidden, input_shape=(self.d,), activation=self.hidden_act,
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate=1-self.dropout))
         self.model.add(Dense(self.d, activation='linear',
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
-        self.model.add(Lambda(lambda x: K.l2_normalize(x, axis=-1)))  
+        self.model.add(Lambda(lambda x: l2_normalize(x, axis=-1)))  
         self.model.compile(**self.compile_opts)
 
 
@@ -604,7 +609,7 @@ class RecurrentEvent(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate=1-self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
@@ -640,7 +645,7 @@ class GRUEvent(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate=1-self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
@@ -676,10 +681,10 @@ class GRUEvent_normed(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate = 1-self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
-        self.model.add(Lambda(lambda x: K.l2_normalize(x, axis=-1)))  
+        self.model.add(Lambda(lambda x: l2_normalize(x, axis=-1)))  
         self.model.compile(**self.compile_opts)
 
 
@@ -723,7 +728,7 @@ class LSTMEvent(RecurentLinearEvent):
                            kernel_regularizer=self.kernel_regularizer,
                            kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(self.dropout))
+        self.model.add(Dropout(rate = 1-self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)

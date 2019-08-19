@@ -1,10 +1,12 @@
 import numpy as np
 import tensorflow as tf
-from scipy.misc import logsumexp
+from scipy.special import logsumexp
 from tqdm import tqdm
-from keras import backend as K
-from event_models import GRUEvent
+from core.event_models import GRUEvent
 
+### there are a ~ton~ of tf warnings from Keras, suppress them here
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 class Results(object):
     """ placeholder object to store results """
@@ -12,10 +14,6 @@ class Results(object):
 
 
 class SEM(object):
-    """
-    This port of SAM's code (done with a different programming logic)
-    in python. More documentation to come!
-    """
 
     def __init__(self, lmda=1., alfa=10.0, f_class=GRUEvent, f_opts=None):
         """
@@ -83,7 +81,7 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         self.session = tf.Session()
-        K.set_session(self.session)
+        tf.compat.v1.keras.backend.set_session(self.session)
         self.model = None
 
         for ii in my_it(n):
@@ -213,8 +211,8 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         if compile_model:
-            self.session = tf.Session()
-            K.set_session(self.session)
+            self.session = tf.compat.v1.Session()
+            tf.compat.v1.keras.backend.set_session(self.session)
             self.model = None
 
         for ii in my_it(n):
@@ -543,8 +541,8 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         if self.k_prev is None:
-            self.session = tf.Session()
-            K.set_session(self.session)
+            self.session = tf.compat.v1.Session()
+            tf.compat.v1.keras.backend.set_session(self.session)
 
             # initialize the first event model
             new_model = self.f_class(self.d, **self.f_opts)
@@ -598,11 +596,11 @@ class SEM(object):
             self.update_single_event(x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons)
 
     def clear_event_models(self):
-        for e in self.event_models.itervalues():
+        for e in self.event_models.values():
             e.model = None
         self.event_models = None
         tf.reset_default_graph()  # for being sure
-        K.clear_session()
+        tf.keras.backend.clear_session()
 
 
 

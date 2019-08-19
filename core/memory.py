@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.stats import multivariate_normal as mvnorm
 from scipy.special import logsumexp
-from models.utils import fast_mvnorm_diagonal_logprob
+from core.utils import fast_mvnorm_diagonal_logprob
 np.seterr(divide = 'ignore')
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
@@ -235,7 +235,7 @@ def sample_e_given_x_y(x, y, event_models, alpha, lmda):
 
             # calculate the probability of x_t|x_{1:t-1}
             p_model = np.zeros(k) - np.inf
-            for idx, e_model in event_models.iteritems():
+            for idx, e_model in event_models.items():
                 if idx != e_prev:
                     x_t_hat = e_model.predict_next_generative(x_current)
                 else:
@@ -324,7 +324,7 @@ def sample_x_given_y_e(x_hat, y, e, event_models, tau):
 
 
 def gibbs_memory_sampler(y_mem, sem_model, memory_alpha, memory_lambda, memory_epsilon, b, tau,
-                         n_samples=250, n_burnin=100, progress_bar=True, leave_progress_bar=True):
+                         n_samples=100, n_burnin=25, progress_bar=True, leave_progress_bar=True):
     """
 
     :param y_mem: list of 3-tuples (x_mem, e_mem, t_mem), corrupted memory trace
@@ -334,8 +334,8 @@ def gibbs_memory_sampler(y_mem, sem_model, memory_alpha, memory_lambda, memory_e
     :param memory_epsilon: (float) parameter controlling propensity to include null trace in reconstruction
     :param b: (int) time index corruption noise
     :param tau: (float, greater than zero) feature vector corruption noise
-    :param n_burnin: (int, default 100) number of Gibbs sampling itterations to burn in
-    :param n_samples: (int, default 250) number of Gibbs sampling itterations to collect
+    :param n_burnin: (int, default 25) number of Gibbs sampling itterations to burn in
+    :param n_samples: (int, default 100) number of Gibbs sampling itterations to collect
     :param progress_bar: (bool) use progress bar for sampling?
     :param leave_progress_bar: (bool, default=True) leave the progress bar at the end? 
 
@@ -343,7 +343,7 @@ def gibbs_memory_sampler(y_mem, sem_model, memory_alpha, memory_lambda, memory_e
     """
 
     event_models =  {
-        k: v for k, v in sem_model.event_models.iteritems() if v.f_is_trained
+        k: v for k, v in sem_model.event_models.items() if v.f_is_trained
     }
 
     d = np.shape(y_mem[0][0])[0]

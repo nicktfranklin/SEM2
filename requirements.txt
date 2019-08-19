@@ -75,7 +75,6 @@ jupyter-console==6.0.0
 jupyter-core==4.5.0
 jupyterlab==1.0.2
 jupyterlab-server==1.0.0
-Keras==2.2.4
 Keras-Applications==1.0.8
 Keras-Preprocessing==1.1.0
 keyring==18.0.0
