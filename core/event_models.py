@@ -9,14 +9,6 @@ from tensorflow.keras.backend import l2_normalize
 from core.utils import fast_mvnorm_diagonal_logprob, unroll_data
 
 print("TensorFlow Version: {}".format(tf.__version__))
-# print("Keras      Version: {}".format(keras.__version__))
-
-
-## Do we need this code?
-# config = tf.ConfigProto()
-# config.intra_op_parallelism_threads = 4
-# config.inter_op_parallelism_threads = 4
-# tf.Session(config=config)
 
 ### there are a ~ton~ of tf warnings from Keras, suppress them here
 import os

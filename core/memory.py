@@ -2,7 +2,7 @@ import numpy as np
 from tqdm import tqdm
 from scipy.stats import multivariate_normal as mvnorm
 from scipy.special import logsumexp
-from core.utils import fast_mvnorm_diagonal_logprob
+from .utils import fast_mvnorm_diagonal_logprob
 np.seterr(divide = 'ignore')
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
