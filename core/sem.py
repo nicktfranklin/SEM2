@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from scipy.special import logsumexp
 from tqdm import tqdm
-from core.event_models import GRUEvent
+from .event_models import GRUEvent
 
 ### there are a ~ton~ of tf warnings from Keras, suppress them here
 import os
