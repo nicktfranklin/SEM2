@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import glorot_uniform  # Or your initializer 
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.backend import l2_normalize
-from core.utils import fast_mvnorm_diagonal_logprob, unroll_data
+from .core.utils import fast_mvnorm_diagonal_logprob, unroll_data
 
 print("TensorFlow Version: {}".format(tf.__version__))
 
