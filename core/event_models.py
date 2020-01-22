@@ -34,30 +34,41 @@ def reset_weights(session, model):
             layer.kernel.initializer.run(session=session)
 
 
-def map_variance(samples, df0, scale0):
+def map_variance(samples, nu0, var0):
     """
     This estimator assumes an scaled inverse-chi squared prior over the
     variance and a Gaussian likelihood. The parameters d and scale
     of the internal function parameterize the posterior of the variance.
     Taken from Bayesian Data Analysis, ch2 (Gelman)
 
-    samples: N length array or NxD array
-    df0: prior degrees of freedom
-    scale0: prior scale parameter
-    mu: (optional) mean function
+    samples: N length array or NxD array, where N is the number of 
+             samples and D is the dimensions
+    nu0: prior degrees of freedom
+    var0: prior scale parameter
 
-    returns: float or d-length array, mode of the posterior
+    returns: float or D-length array, mode of the posterior
+
+    ## Calculation ##
+
+    the posterior of the variance is thus (Gelman, 2nd edition, page 50):
+        
+        p(var | y) ~ Inv-X^2(nu0 + n, (nu0 * var0 + n * v) / (nu0 + n) )
+
+    where n is the sample size and v is the empirical variance.  The 
+    mode of this posterior simplifies to:
+
+        mode(var|y) = (nu0 * var0 + n * v) / (v0 + n + 2)
+
+    which is just a weighted average of the two modes
+
     """
-    if np.ndim(samples) > 1:
-        n, d = np.shape(samples)
-    else:
-        n = np.shape(samples)[0]
-        d = 1
 
+    # get n and v from the data
+    n = np.shape(samples)[0]
     v = np.var(samples, axis=0)
-    df = df0 + n
-    scale = (df0 * scale0 + n * v) / df
-    return df * scale / (df * 2)
+
+    mode = (nu0 * var0 + n * v) / (nu0 + n + 2)
+    return mode
 
 
 class LinearEvent(object):
