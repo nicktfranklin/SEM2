@@ -411,7 +411,7 @@ class SEM(object):
             log_like = np.zeros((1, self.k)) - np.inf
             log_prior = np.zeros((1, self.k)) - np.inf
 
-        # calculate sCRP prior
+        # calculate unormed sCRP prior
         prior = self._calculate_unnormed_sCRP(self.k_prev)
 
         # likelihood
@@ -490,7 +490,9 @@ class SEM(object):
 
         # cache the diagnostic measures
         log_like[-1, :len(active)] = np.sum(lik, axis=0)
-        log_prior[-1, :len(active)+1] = np.log(prior[:len(active)+1])
+
+        # calculate the log prior
+        log_prior[-1, :len(active)] = np.log(prior[:len(active)])
 
         # calculate surprise
         bayesian_surprise = logsumexp(lik + np.tile(log_prior[-1, :len(active)], (np.shape(lik)[0], 1)), axis=1)
