@@ -58,4 +58,24 @@ def fast_mvnorm_diagonal_logprob(x, variances):
 
     """
     return -0.5 * (log_2pi * np.shape(x)[0] + np.sum(np.log(variances) + (x**2) / variances ))
+
+
+def get_prior_scale(df, target_variance):
+    """
+    This function solves for the scale parameter need for a scaled inverse chi-squard 
+    distribution, give degrees of freedom (df) and the desired variance (i.e. the 
+    mode of the distribution, is this function is intended to determine the prior over
+    a Guassian variance).
+      
+    The mode of a scaled-inverse chi-squared is defined:
+    (see Gelman, et al., Bayesian Data Analysis 2004)
+
+    mode(theta) = df / (df + 2) * scale
+
+    hense, if we set mode(theta) to our target, then the scale is
+
+    scale = target_variance * (df + 2) / df
+
+    """
+    return target_variance * (df + 2) / df
     

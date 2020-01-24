@@ -80,8 +80,6 @@ class SEM(object):
                 return range(l)
 
         # store a compiled version of the model and session for reuse
-        self.session = tf.Session()
-        tf.compat.v1.keras.backend.set_session(self.session)
         self.model = None
 
         for ii in my_it(n):
@@ -95,7 +93,7 @@ class SEM(object):
                 if self.model is None:
                     self.model = new_model.init_model()
                 else:
-                    new_model.set_model(self.session, self.model)
+                    new_model.set_model(self.model)
                 self.event_models[k] = new_model
 
             # update event model
@@ -211,8 +209,6 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         if compile_model:
-            self.session = tf.compat.v1.Session()
-            tf.compat.v1.keras.backend.set_session(self.session)
             self.model = None
 
         for ii in my_it(n):
@@ -233,7 +229,7 @@ class SEM(object):
                     if self.model is None:
                         self.model = new_model.init_model()
                     else:
-                        new_model.set_model(self.session, self.model)
+                        new_model.set_model(self.model)
                     self.event_models[k0] = new_model
                     new_model = None  # clear the new model variable from memory
 
@@ -450,17 +446,22 @@ class SEM(object):
                     if self.model is None:
                         self.model = new_model.init_model()
                     else:
-                        new_model.set_model(self.session, self.model)
+                        new_model.set_model(self.model)
                     self.event_models[k0] = new_model
 
                 # get the log likelihood for each event model
                 model = self.event_models[k0]
 
                 if not event_boundary:
+                    # this is correct.  log_likelihood sequence makes the model prediction internally
+                    # using predict_next_generative, and evaluates the likelihood of the prediction
                     lik[ii, k0] = model.log_likelihood_sequence(x[:ii, :].reshape(-1, self.d), x_curr)
                 else:
                     lik[ii, k0] = model.log_likelihood_f0(x_curr)
+                # print(lik)
 
+            # here, get the MAP prediction.  This considers what the MAP hypothesis, within the event
+            # and generates a point-estimate arround that.
             if event_boundary:
                 map_prediction[ii, :] = self.event_models[k_within_event].predict_f0()
             else:
@@ -543,8 +544,8 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         if self.k_prev is None:
-            self.session = tf.compat.v1.Session()
-            tf.compat.v1.keras.backend.set_session(self.session)
+            # self.session = tf.compat.v1.Session()
+            # tf.compat.v1.keras.backend.set_session(self.session)
 
             # initialize the first event model
             new_model = self.f_class(self.d, **self.f_opts)
@@ -595,13 +596,15 @@ class SEM(object):
         self.init_for_boundaries(list_events)
 
         for x in my_it(list_events):
-            self.update_single_event(x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons)
+            self.update_single_event(
+                x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons
+                )
 
     def clear_event_models(self):
         for e in self.event_models.values():
             e.model = None
         self.event_models = None
-        tf.reset_default_graph()  # for being sure
+        tf.compat.v1.reset_default_graph()  # for being sure
         tf.keras.backend.clear_session()
 
 

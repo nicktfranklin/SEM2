@@ -1,12 +1,13 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation, SimpleRNN, GRU, Dropout, LSTM, LeakyReLU, Lambda
+from tensorflow.keras.layers import Dense, Activation, SimpleRNN, GRU, Dropout, LSTM, LeakyReLU, Lambda, LayerNormalization
 from tensorflow.keras.initializers import glorot_uniform  # Or your initializer of choice
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.backend import l2_normalize
-from .utils import fast_mvnorm_diagonal_logprob, unroll_data
+from .utils import fast_mvnorm_diagonal_logprob, unroll_data, get_prior_scale
+from scipy.stats import norm
 
 print("TensorFlow Version: {}".format(tf.__version__))
 
@@ -14,24 +15,6 @@ print("TensorFlow Version: {}".format(tf.__version__))
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-
-# run a check that tensorflow works on import
-def check_tf():
-    a = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[2, 3], name='a')
-    b = tf.constant([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], shape=[3, 2], name='b')
-    c = tf.matmul(a, b)
-
-    with tf.compat.v1.Session() as sess:
-        sess.run(c)
-    print("TensorFlow Check Passed")
-check_tf()
-
-
-
-def reset_weights(session, model):
-    for layer in model.layers:
-        if hasattr(layer, "kernel_initializer"):
-            layer.kernel.initializer.run(session=session)
 
 
 def map_variance(samples, nu0, var0):
@@ -74,8 +57,8 @@ def map_variance(samples, nu0, var0):
 class LinearEvent(object):
     """ this is the base clase of the event model """
 
-    def __init__(self, d, var_df0, var_scale0, optimizer=None, n_epochs=10, init_model=False,
-                 kernel_initializer='glorot_uniform', l2_regularization=0.00, batch_size=32, prior_log_prob=0.0,
+    def __init__(self, d, var_df0, var_scale0=None, optimizer=None, n_epochs=10, init_model=False,
+                 kernel_initializer='glorot_uniform', l2_regularization=0.00, batch_size=32, prior_log_prob=None,
                  reset_weights=False, batch_update=True, optimizer_kwargs=None):
         """
 
@@ -86,8 +69,31 @@ class LinearEvent(object):
         self.f0_is_trained = False
         self.f0 = np.zeros(d)
 
-        self.x_history = [np.zeros((0, self.d))]
+        self.var_df0 = var_df0
+        # the default variance scale matches the generative process of
+        # X ~ N(0, (1/d) * I)
+        # such that the mode of the prior variance is 1/d
+        if var_scale0 is None:
+            target_variance = 1 / d
+            var_scale0 = get_prior_scale(self.var_df0, target_variance)
+        self.var_scale0 = var_scale0
+
+        # also set a default prior log probability, inferred from the prior variance
+        if prior_log_prob is None:
+            # this is a decent approximation of what a random normalized vector would
+            # under the generative process of X ~ N(0, var_scale0 * I),
+            # which gives (in expectation) unit vectors
+            
+            # first, get the mode of the prior 
+            mode_var = var_df0 / (var_df0 + 2) * var_scale0
+
+            # note, norm uses standard deviation, not variance
+            prior_log_prob = norm(0, mode_var ** 0.5).logpdf(mode_var ** 0.5) * d
+            
         self.prior_probability = prior_log_prob
+
+
+        self.x_history = [np.zeros((0, self.d))]
 
         if (optimizer is None) and (optimizer_kwargs is None):
             optimizer = Adam(lr=0.01, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0, amsgrad=False)
@@ -101,8 +107,7 @@ class LinearEvent(object):
         self.kernel_regularizer = regularizers.l2(l2_regularization)
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        self.var_df0 = var_df0
-        self.var_scale0 = var_scale0
+
         self.d = d
         self.reset_weights = reset_weights
         self.batch_update = batch_update
@@ -132,8 +137,8 @@ class LinearEvent(object):
         ])
         self.model.compile(**self.compile_opts)
 
-    def set_model(self, sess, model):
-        self.sess = sess
+    def set_model(self, model):
+        # self.sess = sess
         self.model = model
         self.do_reset_weights()
 
@@ -142,8 +147,11 @@ class LinearEvent(object):
         self.estimate()
 
     def do_reset_weights(self):
-        # self._compile_model()
-        reset_weights(self.sess, self.model)
+        new_weights = [
+            self.model.layers[0].kernel_initializer(w.shape).eval(session=tf.compat.v1.Session())
+                for w in self.model.get_weights()
+        ]
+        self.model.set_weights(new_weights)
         self.model_weights = self.model.get_weights()
 
     def update(self, X, Xp, update_estimate=True):
@@ -332,9 +340,9 @@ class LinearEvent(object):
 
 class NonLinearEvent(LinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, n_hidden=None, hidden_act='tanh', batch_size=32,
+    def __init__(self, d, var_df0, var_scale0=None, n_hidden=None, hidden_act='tanh', batch_size=32,
                  optimizer=None, n_epochs=10, init_model=False, kernel_initializer='glorot_uniform',
-                 l2_regularization=0.00, dropout=0.50, prior_log_prob=0.0, reset_weights=False,
+                 l2_regularization=0.00, dropout=0.50, prior_log_prob=None, reset_weights=False,
                  batch_update=True,
                  optimizer_kwargs=None):
         LinearEvent.__init__(self, d, var_df0, var_scale0, optimizer=optimizer, n_epochs=n_epochs,
@@ -366,12 +374,12 @@ class NonLinearEvent(LinearEvent):
 
 class NonLinearEvent_normed(NonLinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, n_hidden=None, hidden_act='tanh',
+    def __init__(self, d, var_df0, var_scale0=None, n_hidden=None, hidden_act='tanh',
                  optimizer=None, n_epochs=10, init_model=False, kernel_initializer='glorot_uniform',
-                 l2_regularization=0.00, dropout=0.50, prior_log_prob=0.0, reset_weights=False, batch_size=32,
+                 l2_regularization=0.00, dropout=0.50, prior_log_prob=None, reset_weights=False, batch_size=32,
                  batch_update=True, optimizer_kwargs=None):
 
-        NonLinearEvent.__init__(self, d, var_df0, var_scale0, optimizer=optimizer, n_epochs=n_epochs,
+        NonLinearEvent.__init__(self, d, var_df0, var_scale0=None, optimizer=optimizer, n_epochs=n_epochs,
                                      l2_regularization=l2_regularization,batch_size=batch_size,
                                      kernel_initializer=kernel_initializer, init_model=False,
                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
@@ -422,9 +430,9 @@ class RecurentLinearEvent(LinearEvent):
     # RNN which is initialized once and then trained using stochastic gradient descent
     # i.e. each new scene is a single example batch of size 1
 
-    def __init__(self, d, var_df0, var_scale0, t=3,
+    def __init__(self, d, var_df0, var_scale0=None, t=3,
                  optimizer=None, n_epochs=10, l2_regularization=0.00, batch_size=32,
-                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=0.0, reset_weights=False,
+                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
                  batch_update=True, optimizer_kwargs=None):
         #
         # D = dimension of single input / output example
@@ -461,9 +469,11 @@ class RecurentLinearEvent(LinearEvent):
     def do_reset_weights(self):
         # # self._compile_model()
         if self.init_weights is None:
-            for layer in self.model.layers:
-                new_weights = [glorot_uniform()(w.shape).eval(session=self.sess) for w in layer.get_weights()]
-                layer.set_weights(new_weights)
+            new_weights = [
+                self.model.layers[0].kernel_initializer(w.shape).eval(session=tf.compat.v1.Session())
+                 for w in self.model.get_weights()
+            ]
+            self.model.set_weights(new_weights)
             self.model_weights = self.model.get_weights()
             self.init_weights = self.model.get_weights()
         else:
@@ -585,12 +595,12 @@ class RecurentLinearEvent(LinearEvent):
 
 class RecurrentEvent(RecurentLinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, t=3, n_hidden=None, optimizer=None,
+    def __init__(self, d, var_df0, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
-                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=0.0, reset_weights=False, 
+                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False, 
                  batch_update=True, optimizer_kwargs=None):
 
-        RecurentLinearEvent.__init__(self, d, var_df0, var_scale0, t=t, optimizer=optimizer, n_epochs=n_epochs,
+        RecurentLinearEvent.__init__(self, d, var_df0, var_scale0=None, t=t, optimizer=optimizer, n_epochs=n_epochs,
                                      l2_regularization=l2_regularization, batch_size=batch_size,
                                      kernel_initializer=kernel_initializer, init_model=False, prior_log_prob=prior_log_prob,
                                      reset_weights=reset_weights, batch_update=batch_update, optimizer_kwargs=optimizer_kwargs)
@@ -620,9 +630,9 @@ class RecurrentEvent(RecurentLinearEvent):
 
 class GRUEvent(RecurentLinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, t=3, n_hidden=None, optimizer=None,
+    def __init__(self, d, var_df0, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
-                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=0.0, reset_weights=False,
+                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
                  batch_update=True, optimizer_kwargs=None):
 
         RecurentLinearEvent.__init__(self, d, var_df0, var_scale0, t=t, optimizer=optimizer, n_epochs=n_epochs,
@@ -656,9 +666,9 @@ class GRUEvent(RecurentLinearEvent):
 
 class GRUEvent_normed(RecurentLinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, t=3, n_hidden=None, optimizer=None,
+    def __init__(self, d, var_df0, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
-                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=0.0, reset_weights=False,
+                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
                  batch_update=True, optimizer_kwargs=None):
 
         RecurentLinearEvent.__init__(self, d, var_df0, var_scale0, t=t, optimizer=optimizer, n_epochs=n_epochs,
@@ -703,9 +713,9 @@ class GRUEvent_spherical_noise(GRUEvent):
 
 class LSTMEvent(RecurentLinearEvent):
 
-    def __init__(self, d, var_df0, var_scale0, t=3, n_hidden=None, optimizer=None,
+    def __init__(self, d, var_df0, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00,
-                 batch_size=32, kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=0.0,
+                 batch_size=32, kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None,
                  reset_weights=False, batch_update=True, optimizer_kwargs=None):
 
         RecurentLinearEvent.__init__(self, d, var_df0, var_scale0, t=t, optimizer=optimizer, n_epochs=n_epochs,
