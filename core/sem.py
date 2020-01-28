@@ -371,6 +371,7 @@ class SEM(object):
                 if save_x_hat:
                     x_hat = np.zeros((n_scene, self.d))
                     sigma = np.zeros((n_scene, self.d))
+                    scene_log_like = np.zeros((n_scene, self.k)) - np.inf # for debugging only
                 if generative_predicitons:
                     x_hat_gen = np.zeros((n_scene, self.d))
 
@@ -381,6 +382,7 @@ class SEM(object):
                 if save_x_hat:
                     x_hat = self.results.x_hat
                     sigma = self.results.sigma
+                    scene_log_like = self.results.scene_log_like  # for debugging only
                 if generative_predicitons:
                     x_hat_gen = self.results.x_hat_gen
 
@@ -393,6 +395,11 @@ class SEM(object):
                     log_prior = np.concatenate([log_prior, np.zeros((n, 1)) - np.inf], axis=1)
                     n, k0 = np.shape(post)
 
+                    if save_x_hat:
+                        scene_log_like = np.concatenate([
+                            scene_log_like, np.zeros((np.shape(scene_log_like)[0], 1)) - np.inf
+                            ], axis=1)
+
                 # extend the size of the posterior, etc
                 post = np.concatenate([post, np.zeros((1, self.k))], axis=0)
                 log_like = np.concatenate([log_like, np.zeros((1, self.k)) - np.inf], axis=0)
@@ -400,6 +407,7 @@ class SEM(object):
                 if save_x_hat:
                     x_hat = np.concatenate([x_hat, np.zeros((n_scene, self.d))], axis=0)
                     sigma = np.concatenate([sigma, np.zeros((n_scene, self.d))], axis=0)
+                    scene_log_like = np.concatenate([scene_log_like, np.zeros((n_scene, self.k)) - np.inf], axis=0)
 
                 if generative_predicitons:
                     x_hat_gen = np.concatenate([x_hat_gen, np.zeros((n_scene, self.d))], axis=0)
@@ -526,8 +534,10 @@ class SEM(object):
             if save_x_hat:
                 x_hat[-n_scene:, :] = _x_hat
                 sigma[-n_scene:, :] = _sigma
+                scene_log_like[-n_scene:, :len(active)] = lik
                 self.results.x_hat = x_hat
                 self.results.sigma = sigma
+                self.results.scene_log_like = scene_log_like
 
             if generative_predicitons:
                 x_hat_gen[-n_scene:, :] = _x_hat_gen
