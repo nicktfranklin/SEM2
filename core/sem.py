@@ -3,6 +3,7 @@ import tensorflow as tf
 from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
+import gc
 
 ### there are a ~ton~ of tf warnings from Keras, suppress them here
 import os
@@ -168,8 +169,7 @@ class SEM(object):
             leave the progress bar after completing?
 
         minimize_memory: bool
-            function to minimize memory storage during running --> only returns the log_probability of each
-            cluster and nothing else
+            function to minimize memory storage during running 
 
         Return
         ------
@@ -184,11 +184,11 @@ class SEM(object):
         n = x.shape[0]
 
         # initialize arrays
-        if not minimize_memory:
-            post = np.zeros((n, self.k))
-            pe = np.zeros(np.shape(x)[0])
-            x_hat = np.zeros(np.shape(x))
-            log_boundary_probability = np.zeros(np.shape(x)[0])
+        # if not minimize_memory:
+        post = np.zeros((n, self.k))
+        pe = np.zeros(np.shape(x)[0])
+        x_hat = np.zeros(np.shape(x))
+        log_boundary_probability = np.zeros(np.shape(x)[0])
 
         # these are special case variables to deal with the possibility the current event is restarted
         lik_restart_event = -np.inf
@@ -268,8 +268,8 @@ class SEM(object):
 
             # calculate the event boundary probability
             _post[self.k_prev] = restart_prob
-            if not minimize_memory:
-                log_boundary_probability[ii] = logsumexp(_post) - logsumexp(np.concatenate([_post, [repeat_prob]]))
+            # if not minimize_memory:
+            log_boundary_probability[ii] = logsumexp(_post) - logsumexp(np.concatenate([_post, [repeat_prob]]))
 
             # calculate the probability of an event label, ignoring the event boundaries
             if self.k_prev is not None:
@@ -278,9 +278,9 @@ class SEM(object):
                 lik[self.k_prev] = logsumexp(np.array([lik[self.k_prev], lik_restart_event]))
 
                 # now, the normalized posterior
-                if not minimize_memory:
-                    p = np.log(prior[:len(active)]) + lik - np.max(lik)  # subtracting the max doesn't change proportionality
-                    post[ii, :len(active)] = np.exp(p - logsumexp(p))
+                # if not minimize_memory:
+                p = np.log(prior[:len(active)]) + lik - np.max(lik)  # subtracting the max doesn't change proportionality
+                post[ii, :len(active)] = np.exp(p - logsumexp(p))
 
                 # this is a diagnostic readout and does not effect the model
                 log_like[ii, :len(active)] = lik
@@ -294,8 +294,8 @@ class SEM(object):
             else:
                 log_like[ii, 0] = 0.0
                 log_prior[ii, 0] = self.alfa
-                if not minimize_memory:
-                    post[ii, 0] = 1.0
+                # if not minimize_memory:
+                post[ii, 0] = 1.0
 
             if not minimize_memory:
                 # prediction error: euclidean distance of the last model and the current scene vector
@@ -319,12 +319,6 @@ class SEM(object):
             self.x_prev = x_curr  # store the current scene for next trial
             self.k_prev = k  # store the current event for the next trial
 
-        if minimize_memory:
-            self.clear_event_models()
-            self.results = Results()
-            self.results.log_post = log_like + log_prior
-            return
-
         # calculate Bayesian Surprise
         log_post = log_like[:-1, :] + log_prior[:-1, :]
         log_post -= np.tile(logsumexp(log_post, axis=1), (np.shape(log_post)[1], 1)).T
@@ -340,7 +334,14 @@ class SEM(object):
         self.results.x_hat = x_hat
         self.results.log_loss = logsumexp(log_like + log_prior, axis=1)
         self.results.log_boundary_probability = log_boundary_probability
-        # # this is a debugging thing
+
+        
+        if minimize_memory:
+            self.clear_event_models()
+            gc.collect()
+            return
+
+        # these are debuggin metrics
         self.results.restart_prob = restart_prob
         self.results.repeat_prob = repeat_prob
 
