@@ -615,9 +615,10 @@ class SEM(object):
             self.clear_event_models()
 
     def clear_event_models(self):
-        for _, e in self.event_models.items():
-            e.clear()
-            e.model = None
+        if self.event_models is not None:
+            for _, e in self.event_models.items():
+                e.clear()
+                e.model = None
             
         self.event_models = None
         tf.compat.v1.reset_default_graph()  # for being sure
