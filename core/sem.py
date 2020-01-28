@@ -565,7 +565,7 @@ class SEM(object):
             self.event_models[0] = new_model
 
     def run_w_boundaries(self, list_events, progress_bar=True, leave_progress_bar=True, save_x_hat=False, 
-                         generative_predicitons=False):
+                         generative_predicitons=False, minimize_memory=False):
         """
         This method is the same as the above except the event boundaries are pre-specified by the experimenter
         as a list of event tokens (the event/schema type is still inferred).
@@ -610,6 +610,8 @@ class SEM(object):
             self.update_single_event(
                 x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons
                 )
+        if minimize_memory:
+            self.clear_event_models()
 
     def clear_event_models(self):
         for e in self.event_models.values():
@@ -617,6 +619,7 @@ class SEM(object):
         self.event_models = None
         tf.compat.v1.reset_default_graph()  # for being sure
         tf.keras.backend.clear_session()
+        gc.collect()
 
 
 
