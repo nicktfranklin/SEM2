@@ -6,7 +6,7 @@ from tensorflow.keras.initializers import glorot_uniform  # Or your initializer 
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.backend import l2_normalize
-from .utils import fast_mvnorm_diagonal_logprob, unroll_data, get_prior_scale
+from .utils import fast_mvnorm_diagonal_logprob, unroll_data, get_prior_scale, delete_object_attributes
 from scipy.stats import norm
 
 print("TensorFlow Version: {}".format(tf.__version__))
@@ -123,6 +123,9 @@ class LinearEvent(object):
         # switch for inheritance -- don't want to init the model for sub-classes
         if init_model:
             self.init_model()
+
+    def clear(self):
+        delete_object_attributes(self)
 
     def init_model(self):
         self._compile_model()
@@ -269,12 +272,6 @@ class LinearEvent(object):
         Xp_hat = self.predict_next_generative(X)
         return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
 
-    # create a new cluster of scenes
-    def new_token(self):
-        if len(self.x_history) == 1 and self.x_history[0].shape[0] == 0:
-            # special case for the first cluster which is already created
-            return
-        self.x_history.append(np.zeros((0, self.d)))
 
     def predict_next_generative(self, X):
         self.model.set_weights(self.model_weights)

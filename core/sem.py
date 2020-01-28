@@ -3,6 +3,7 @@ import tensorflow as tf
 from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
+from .utils import delete_object_attributes
 import gc
 
 ### there are a ~ton~ of tf warnings from Keras, suppress them here
@@ -614,18 +615,21 @@ class SEM(object):
             self.clear_event_models()
 
     def clear_event_models(self):
-        for e in self.event_models.values():
+        for _, e in self.event_models.items():
+            e.clear()
             e.model = None
+            
         self.event_models = None
         tf.compat.v1.reset_default_graph()  # for being sure
         tf.keras.backend.clear_session()
         gc.collect()
 
 
-
 def clear_sem(sem_model):
     """ This function deletes sem from memory"""
     assert type(sem_model) == SEM
     sem_model.clear_event_models()
-    sem_model.results = None
+    delete_object_attributes(sem_model.results)
+    delete_object_attributes(sem_model)
+    gc.collect()
     return None

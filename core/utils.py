@@ -78,4 +78,10 @@ def get_prior_scale(df, target_variance):
 
     """
     return target_variance * (df + 2) / df
+
+def delete_object_attributes(myobj):
+    # take advantage of mutability here
+    while myobj.__dict__.items():
+        attr = [k for k in myobj.__dict__.keys()][0]
+        myobj.__delattr__(attr)
     
