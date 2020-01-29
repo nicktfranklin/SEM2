@@ -625,12 +625,14 @@ class SEM(object):
         tf.keras.backend.clear_session()
         gc.collect()
 
+    def clear(self):
+        """ This function deletes sem from memory"""
+        self.clear_event_models()
+        delete_object_attributes(self.results)
+        delete_object_attributes(self)
+        gc.collect()
+
 
 def clear_sem(sem_model):
-    """ This function deletes sem from memory"""
-    assert type(sem_model) == SEM
-    sem_model.clear_event_models()
-    delete_object_attributes(sem_model.results)
-    delete_object_attributes(sem_model)
-    gc.collect()
-    return None
+    """ This function deletes sem from memory. Will be depricated soon"""
+    sem_model.clear()
