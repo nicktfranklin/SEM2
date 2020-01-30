@@ -79,18 +79,22 @@ class LinearEvent(object):
         # prior df and solve for the scale for some desired variance.
         
         
-        if variance_prior_mode is None:
+        # allow for set DF and set scale to override the variance prior mode
+        if (var_df0 is not None) and (var_scale0 is not None):
+            variance_prior_mode = var_df0 / (var_df0 + 2) * var_scale0
+        
+        elif variance_prior_mode is None:
             # in simulations, it is often convient to approximately 
             # normalize the stim to unit length, or 
             # X ~ N(0, (1/d) * I)
             variance_prior_mode = 1 / d 
 
         if var_df0 is None:
-            self.var_df0 = 1
+            var_df0 = 1
+        self.var_scale0 = var_df0
 
         if var_scale0 is None:
             var_scale0 = get_prior_scale(self.var_df0, variance_prior_mode)
-
         self.var_scale0 = var_scale0
 
         # also set a default prior log probability, inferred from the prior variance
@@ -99,11 +103,9 @@ class LinearEvent(object):
             # under the generative process of X ~ N(0, var_scale0 * I),
             # which gives (in expectation) unit vectors
             
-            # first, get the mode of the prior 
-            mode_var = var_df0 / (var_df0 + 2) * var_scale0
-
             # note, norm uses standard deviation, not variance
-            prior_log_prob = norm(0, mode_var ** 0.5).logpdf(mode_var ** 0.5) * d
+            prior_log_prob = norm(0, variance_prior_mode ** 0.5).logpdf(
+                variance_prior_mode ** 0.5) * d
             
         self.prior_probability = prior_log_prob
         
