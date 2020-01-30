@@ -91,7 +91,7 @@ class LinearEvent(object):
 
         if var_df0 is None:
             var_df0 = 1
-        self.var_scale0 = var_df0
+        self.var_df0 = var_df0
 
         if var_scale0 is None:
             var_scale0 = get_prior_scale(self.var_df0, variance_prior_mode)
@@ -380,7 +380,7 @@ class NonLinearEvent(LinearEvent):
         self.model.add(Dense(self.n_hidden, input_shape=(self.d,), activation=self.hidden_act,
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
-        self.model.add(Dropout(rate=1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation='linear',
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
@@ -415,7 +415,7 @@ class NonLinearEvent_normed(NonLinearEvent):
         self.model.add(Dense(self.n_hidden, input_shape=(self.d,), activation=self.hidden_act,
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
-        self.model.add(Dropout(rate=1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation='linear',
                              kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
@@ -633,7 +633,7 @@ class RecurrentEvent(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(rate=1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
@@ -671,7 +671,7 @@ class GRUEvent(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(rate=1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
@@ -709,7 +709,7 @@ class GRUEvent_normed(RecurentLinearEvent):
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(rate = 1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                   kernel_initializer=self.kernel_initializer))
         self.model.add(Lambda(lambda x: l2_normalize(x, axis=-1)))  
@@ -758,7 +758,7 @@ class LSTMEvent(RecurentLinearEvent):
                            kernel_regularizer=self.kernel_regularizer,
                            kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(rate = 1-self.dropout))
+        self.model.add(Dropout(rate=self.dropout))
         self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
                              kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
