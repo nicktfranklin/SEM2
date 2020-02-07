@@ -348,7 +348,7 @@ class SEM(object):
 
         return post
 
-    def update_single_event(self, x, update=True, save_x_hat=False, generative_predicitons=False):
+    def update_single_event(self, x, update=True, save_x_hat=False, generative_predicitons=False, aggregator=np.sum):
         """
 
         :param x: this is an n x d array of the n scenes in an event
@@ -500,7 +500,7 @@ class SEM(object):
 
 
         # cache the diagnostic measures
-        log_like[-1, :len(active)] = np.sum(lik, axis=0)
+        log_like[-1, :len(active)] = aggregator(lik, axis=0)
 
         # calculate the log prior
         log_prior[-1, :len(active)] = np.log(prior[:len(active)])
@@ -566,7 +566,7 @@ class SEM(object):
             self.event_models[0] = new_model
 
     def run_w_boundaries(self, list_events, progress_bar=True, leave_progress_bar=True, save_x_hat=False, 
-                         generative_predicitons=False, minimize_memory=False):
+                         generative_predicitons=False, minimize_memory=False, aggregator=np.sum):
         """
         This method is the same as the above except the event boundaries are pre-specified by the experimenter
         as a list of event tokens (the event/schema type is still inferred).
@@ -609,7 +609,8 @@ class SEM(object):
 
         for x in my_it(list_events):
             self.update_single_event(
-                x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons
+                x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons,
+                aggregator=aggregator
                 )
         if minimize_memory:
             self.clear_event_models()
