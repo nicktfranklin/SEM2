@@ -89,6 +89,7 @@ class LinearEvent(object):
             # normalize the stim to unit length, or 
             # X ~ N(0, (1/d) * I)
             variance_prior_mode = 1 / d 
+        self.variance_prior_mode = variance_prior_mode
 
         if var_df0 is None:
             var_df0 = 1
@@ -99,14 +100,16 @@ class LinearEvent(object):
         self.var_scale0 = var_scale0
 
         # also set a default prior log probability, inferred from the prior variance
-        if prior_log_prob is None:
-            # this is a decent approximation of what a random normalized vector would
-            # under the generative process of X ~ N(0, var_scale0 * I),
-            # which gives (in expectation) unit vectors
-            
-            # note, norm uses standard deviation, not variance
-            prior_log_prob = norm(0, variance_prior_mode ** 0.5).logpdf(
-                variance_prior_mode ** 0.5) * d
+        # new way!! evaluate the probability of the trace as given a zero mean guassian
+        # vector with the variance prior mode
+        # if prior_log_prob is None:
+            # # this is a decent approximation of what a random normalized vector would
+            # # under the generative process of X ~ N(0, var_scale0 * I),
+            # # which gives (in expectation) unit vectors
+            # 
+            # # note, norm uses standard deviation, not variance
+            # prior_log_prob = norm(0, variance_prior_mode ** 0.5).logpdf(
+            #     variance_prior_mode ** 0.5) * d
             
         self.prior_probability = prior_log_prob
 
@@ -275,7 +278,10 @@ class LinearEvent(object):
     def log_likelihood_f0(self, Xp):
 
         if not self.f0_is_trained:
-            return self.prior_probability
+            if self.prior_probability:
+                return self.prior_probability
+            else: 
+                return norm(0, self.variance_prior_mode ** 0.5).logpdf(Xp).sum()
 
         # predict the initial point
         Xp_hat = self.predict_f0()
@@ -285,14 +291,20 @@ class LinearEvent(object):
 
     def log_likelihood_next(self, X, Xp):
         if not self.f_is_trained:
-            return self.prior_probability
+            if self.prior_probability:
+                return self.prior_probability
+            else: 
+                return norm(0, self.variance_prior_mode ** 0.5).logpdf(Xp).sum()
 
         Xp_hat = self.predict_next(X)
         return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
 
     def log_likelihood_sequence(self, X, Xp):
         if not self.f_is_trained:
-            return self.prior_probability
+            if self.prior_probability:
+                return self.prior_probability
+            else: 
+                return norm(0, self.variance_prior_mode ** 0.5).logpdf(Xp).sum()
 
         Xp_hat = self.predict_next_generative(X)
         return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
@@ -578,6 +590,24 @@ class RecurentLinearEvent(LinearEvent):
         else:
             self.model.set_weights(self.model_weights)
 
+        # get predictions errors for variance estimate *before* updating the 
+        # neural networks.  For an untrained model, the prediction should be the
+        # origin, deterministically
+
+        # Update Sigma
+        x_train_0, xp_train_0 = self.training_pairs[-1]
+        xp_hat = self.model.predict(x_train_0)
+        self.prediction_errors = np.concatenate([self.prediction_errors, xp_train_0 - xp_hat], axis=0)
+                
+        # remove old observations from consideration of the variance
+        t = np.max([0, np.shape(self.prediction_errors)[0] - self.variance_window])
+        self.prediction_errors = self.prediction_errors[t:, :]
+
+        # update the variance
+        self._update_variance()
+
+
+        ## then update the NN
         n_pairs = len(self.training_pairs)
 
         if self.batch_update:
@@ -606,16 +636,6 @@ class RecurentLinearEvent(LinearEvent):
             self.model.train_on_batch(x_batch, xp_batch)
         self.model_weights = self.model.get_weights()
 
-        # Update Sigma
-        x_train_0, xp_train_0 = self.training_pairs[-1]
-        xp_hat = self.model.predict(x_train_0)
-        self.prediction_errors = np.concatenate([self.prediction_errors, xp_train_0 - xp_hat], axis=0)
-                
-        # remove old observations from consideration of the variance
-        t = np.max([0, np.shape(self.prediction_errors)[0] - self.variance_window])
-        self.prediction_errors = self.prediction_errors[t:, :]
-
-        self._update_variance()
  
 
 class RecurrentEvent(RecurentLinearEvent):
