@@ -5,10 +5,6 @@ from tqdm import tqdm
 from .event_models import GRUEvent
 from .utils import delete_object_attributes
 
-### there are a ~ton~ of tf warnings from Keras, suppress them here
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 class Results(object):
     """ placeholder object to store results """
     pass
@@ -50,6 +46,7 @@ class SEM(object):
         self.c = np.array([])  # used by the sCRP prior -> running count of the clustering process
         self.d = None  # dimension of scenes
         self.event_models = dict()  # event model for each event type
+        self.model = None # this is the tensorflow model that gets used
 
         self.x_prev = None  # last scene
         self.k_prev = None  # last event type
@@ -169,7 +166,11 @@ class SEM(object):
             leave the progress bar after completing?
 
         minimize_memory: bool
-            function to minimize memory storage during running 
+            function to minimize memory storage during running
+
+        compile_model: bool (default = True)
+            compile the stored model.  Leave false if previously run.
+
 
         Return
         ------
@@ -207,9 +208,6 @@ class SEM(object):
             def my_it(l):
                 return range(l)
 
-        # store a compiled version of the model and session for reuse
-        if compile_model:
-            self.model = None
 
         for ii in my_it(n):
 
@@ -231,7 +229,7 @@ class SEM(object):
                     else:
                         new_model.set_model(self.model)
                     self.event_models[k0] = new_model
-                    new_model = None  # clear the new model variable from memory
+                    new_model = None  # clear the new model variable (but not the model itself) from memory
 
                 # get the log likelihood for each event model
                 model = self.event_models[k0]
@@ -496,7 +494,6 @@ class SEM(object):
                 for jj in range(2, n_scene):
                     _x_hat_gen[jj, :] = model.predict_next_generative(x[:jj, :])
 
-
         # cache the diagnostic measures
         log_like[-1, :len(active)] = aggregator(lik, axis=0)
 
@@ -554,8 +551,6 @@ class SEM(object):
 
         # store a compiled version of the model and session for reuse
         if self.k_prev is None:
-            # self.session = tf.compat.v1.Session()
-            # tf.compat.v1.keras.backend.set_session(self.session)
 
             # initialize the first event model
             new_model = self.f_class(self.d, **self.f_opts)
@@ -629,7 +624,3 @@ class SEM(object):
         delete_object_attributes(self.results)
         delete_object_attributes(self)
 
-
-def clear_sem(sem_model):
-    """ This function deletes sem from memory. Will be depricated soon"""
-    sem_model.clear()

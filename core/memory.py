@@ -6,7 +6,6 @@ from .utils import fast_mvnorm_diagonal_logprob
 np.seterr(divide = 'ignore')
 import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
-import multiprocessing
 
 def sample_pmf(pmf):
     return np.sum(np.cumsum(pmf) < np.random.uniform(0, 1))

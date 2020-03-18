@@ -2,7 +2,6 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, SimpleRNN, GRU, Dropout, LSTM, LeakyReLU, Lambda, LayerNormalization
-from tensorflow.keras.initializers import glorot_uniform  # Or your initializer of choice
 from tensorflow.keras import regularizers
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.backend import l2_normalize
@@ -10,11 +9,6 @@ from .utils import fast_mvnorm_diagonal_logprob, unroll_data, get_prior_scale, d
 from scipy.stats import norm
 
 print("TensorFlow Version: {}".format(tf.__version__))
-
-### there are a ~ton~ of tf warnings from Keras, suppress them here
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 
 
 def map_variance(samples, nu0, var0):
