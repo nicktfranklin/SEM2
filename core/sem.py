@@ -4,7 +4,6 @@ from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
 from .utils import delete_object_attributes
-import gc
 
 ### there are a ~ton~ of tf warnings from Keras, suppress them here
 import os
@@ -339,7 +338,6 @@ class SEM(object):
         
         if minimize_memory:
             self.clear_event_models()
-            gc.collect()
             return
 
         # these are debuggin metrics
@@ -624,14 +622,12 @@ class SEM(object):
         self.event_models = None
         tf.compat.v1.reset_default_graph()  # for being sure
         tf.keras.backend.clear_session()
-        gc.collect()
 
     def clear(self):
         """ This function deletes sem from memory"""
         self.clear_event_models()
         delete_object_attributes(self.results)
         delete_object_attributes(self)
-        gc.collect()
 
 
 def clear_sem(sem_model):
