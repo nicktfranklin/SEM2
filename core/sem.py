@@ -56,6 +56,8 @@ class SEM(object):
         self.x_prev = None  # last scene
         self.k_prev = None  # last event type
 
+        self.x_history = np.zeros(())
+
         # instead of dumping the results, store them to the object
         self.results = None
 
@@ -282,7 +284,7 @@ class SEM(object):
 
                 # now, the normalized posterior
                 # if not minimize_memory:
-                p = np.log(prior[:len(active)]) + lik - np.max(lik)  # subtracting the max doesn't change proportionality
+                p = np.log(prior[:len(active)]) + lik
                 post[ii, :len(active)] = np.exp(p - logsumexp(p))
 
                 # this is a diagnostic readout and does not effect the model
@@ -620,6 +622,7 @@ class SEM(object):
                 e.model = None
             
         self.event_models = None
+        self.model = None
         tf.compat.v1.reset_default_graph()  # for being sure
         tf.keras.backend.clear_session()
 
