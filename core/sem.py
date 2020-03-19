@@ -5,6 +5,11 @@ from tqdm import tqdm
 from .event_models import GRUEvent
 from .utils import delete_object_attributes
 
+# there are a ~ton~ of tf warnings from Keras, suppress them here
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
 class Results(object):
     """ placeholder object to store results """
     pass
@@ -333,12 +338,11 @@ class SEM(object):
         self.results.log_loss = logsumexp(log_like + log_prior, axis=1)
         self.results.log_boundary_probability = log_boundary_probability
 
-        
         if minimize_memory:
             self.clear_event_models()
             return
 
-        # these are debuggin metrics
+        # these are debugging metrics
         self.results.restart_prob = restart_prob
         self.results.repeat_prob = repeat_prob
 
@@ -354,11 +358,12 @@ class SEM(object):
         events (and not one per event)
         :return:
         """
+
+        n_scene = np.shape(x)[0]
+
         if update:
             self.k += 1
             self._update_state(x, self.k)
-
-            n_scene = np.shape(x)[0]
 
             # pull the relevant items from the results
             if self.results is None:
@@ -413,7 +418,7 @@ class SEM(object):
             log_like = np.zeros((1, self.k)) - np.inf
             log_prior = np.zeros((1, self.k)) - np.inf
 
-        # calculate unormed sCRP prior
+        # calculate un-normed sCRP prior
         prior = self._calculate_unnormed_sCRP(self.k_prev)
 
         # likelihood
@@ -487,7 +492,7 @@ class SEM(object):
 
             if ii == 1 and generative_predicitons:
                 # create a generative prediction of the model, conditioned on the first experienced scene
-                # for now, this is code specific to silvy's simluations
+                # for now, this is code specific to silvy's simulations
                 model = self.event_models[k_within_event]
                 _x_hat_gen[0, :] = x[0, :]
                 _x_hat_gen[1, :] = x[1, :]
