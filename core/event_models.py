@@ -305,6 +305,13 @@ class LinearEvent(object):
         Xp_hat = self.predict_next_generative(X)
         return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
 
+    # create a new cluster of scenes
+    def new_token(self):
+        if len(self.x_history) == 1 and self.x_history[0].shape[0] == 0:
+            # special case for the first cluster which is already created
+            return
+        self.x_history.append(np.zeros((0, self.d)))
+
     def predict_next_generative(self, X):
         self.model.set_weights(self.model_weights)
         # the LDS is a markov model, so these functions are the same
@@ -630,7 +637,6 @@ class RecurrentLinearEvent(LinearEvent):
             self.model.train_on_batch(x_batch, xp_batch)
         self.model_weights = self.model.get_weights()
 
- 
 
 class RecurrentEvent(RecurrentLinearEvent):
 
