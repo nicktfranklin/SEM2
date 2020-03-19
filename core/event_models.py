@@ -10,6 +10,10 @@ from scipy.stats import norm
 
 print("TensorFlow Version: {}".format(tf.__version__))
 
+### there are a ~ton~ of tf warnings from Keras, suppress them here
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 
 def map_variance(samples, nu0, var0):
     """
@@ -94,7 +98,7 @@ class LinearEvent(object):
         self.var_scale0 = var_scale0
 
         # also set a default prior log probability, inferred from the prior variance
-        # new way!! evaluate the probability of the trace as given a zero mean guassian
+        # new way!! evaluate the probability of the trace as given a zero mean gaussian
         # vector with the variance prior mode
         # if prior_log_prob is None:
             # # this is a decent approximation of what a random normalized vector would
@@ -113,7 +117,6 @@ class LinearEvent(object):
         self.variance_window = variance_window
         
         #### ~~~ END Variance Prior Parameters ~~~~ ###
-
 
         self.x_history = [np.zeros((0, self.d))]
 
@@ -163,7 +166,6 @@ class LinearEvent(object):
         self.model.compile(**self.compile_opts)
 
     def set_model(self, model):
-        # self.sess = sess
         self.model = model
         self.do_reset_weights()
 
@@ -302,7 +304,6 @@ class LinearEvent(object):
 
         Xp_hat = self.predict_next_generative(X)
         return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
-
 
     def predict_next_generative(self, X):
         self.model.set_weights(self.model_weights)
@@ -457,8 +458,7 @@ class StationaryEvent(LinearEvent):
         return self.model.predict(np.zeros((1, self.d)))
 
 
-
-class RecurentLinearEvent(LinearEvent):
+class RecurrentLinearEvent(LinearEvent):
 
     # RNN which is initialized once and then trained using stochastic gradient descent
     # i.e. each new scene is a single example batch of size 1
@@ -632,20 +632,20 @@ class RecurentLinearEvent(LinearEvent):
 
  
 
-class RecurrentEvent(RecurentLinearEvent):
+class RecurrentEvent(RecurrentLinearEvent):
 
     def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
                  kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False, 
                  batch_update=True, optimizer_kwargs=None, variance_prior_mode=None,variance_window=None):
 
-        RecurentLinearEvent.__init__(self, d, var_df0, var_scale0=None, t=t,
-                                     optimizer=optimizer, n_epochs=n_epochs,
-                                     l2_regularization=l2_regularization, batch_size=batch_size,
-                                     kernel_initializer=kernel_initializer, init_model=False,
-                                     prior_log_prob=prior_log_prob, reset_weights=reset_weights, 
-                                     batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
-                                     variance_prior_mode=variance_prior_mode,variance_window=variance_window)
+        RecurrentLinearEvent.__init__(self, d, var_df0, var_scale0=None, t=t,
+                                      optimizer=optimizer, n_epochs=n_epochs,
+                                      l2_regularization=l2_regularization, batch_size=batch_size,
+                                      kernel_initializer=kernel_initializer, init_model=False,
+                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
+                                      batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
+                                      variance_prior_mode=variance_prior_mode, variance_window=variance_window)
 
         if n_hidden is None:
             self.n_hidden = d
@@ -670,20 +670,20 @@ class RecurrentEvent(RecurentLinearEvent):
         self.model.compile(**self.compile_opts)
 
 
-class GRUEvent(RecurentLinearEvent):
+class GRUEvent(RecurrentLinearEvent):
 
     def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
                  kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
                  batch_update=True, optimizer_kwargs=None,variance_prior_mode=None,variance_window=None):
 
-        RecurentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0,t=t,
-                                     optimizer=optimizer, n_epochs=n_epochs,
-                                     l2_regularization=l2_regularization, batch_size=batch_size,
-                                     kernel_initializer=kernel_initializer, init_model=False,
-                                     prior_log_prob=prior_log_prob, reset_weights=reset_weights,
-                                     batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
-                                     variance_prior_mode=variance_prior_mode, variance_window=variance_window)
+        RecurrentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0, t=t,
+                                      optimizer=optimizer, n_epochs=n_epochs,
+                                      l2_regularization=l2_regularization, batch_size=batch_size,
+                                      kernel_initializer=kernel_initializer, init_model=False,
+                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
+                                      batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
+                                      variance_prior_mode=variance_prior_mode, variance_window=variance_window)
 
         if n_hidden is None:
             self.n_hidden = d
@@ -708,20 +708,20 @@ class GRUEvent(RecurentLinearEvent):
         self.model.compile(**self.compile_opts)
 
 
-class GRUEvent_normed(RecurentLinearEvent):
+class GRUEvent_normed(RecurrentLinearEvent):
 
     def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
                  kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
                  batch_update=True, optimizer_kwargs=None, variance_prior_mode=None,variance_window=None):
 
-        RecurentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0,t=t, 
-                                     optimizer=optimizer, n_epochs=n_epochs,
-                                     l2_regularization=l2_regularization, batch_size=batch_size,
-                                     kernel_initializer=kernel_initializer, init_model=False,
-                                     prior_log_prob=prior_log_prob, reset_weights=reset_weights,
-                                     batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
-                                     variance_prior_mode=variance_prior_mode,variance_window=variance_window)
+        RecurrentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0, t=t,
+                                      optimizer=optimizer, n_epochs=n_epochs,
+                                      l2_regularization=l2_regularization, batch_size=batch_size,
+                                      kernel_initializer=kernel_initializer, init_model=False,
+                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
+                                      batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
+                                      variance_prior_mode=variance_prior_mode, variance_window=variance_window)
 
         if n_hidden is None:
             self.n_hidden = d
@@ -757,7 +757,7 @@ class GRUEvent_spherical_noise(GRUEvent):
 
 
 
-class LSTMEvent(RecurentLinearEvent):
+class LSTMEvent(RecurrentLinearEvent):
 
     def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
                  n_epochs=10, dropout=0.50, l2_regularization=0.00,
@@ -765,13 +765,13 @@ class LSTMEvent(RecurentLinearEvent):
                  reset_weights=False, batch_update=True, optimizer_kwargs=None, variance_prior_mode=None,
                  variance_window=None):
 
-        RecurentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0,t=t,
-                                     optimizer=optimizer, n_epochs=n_epochs,
-                                     l2_regularization=l2_regularization, batch_size=batch_size,
-                                     kernel_initializer=kernel_initializer, init_model=False,
-                                     prior_log_prob=prior_log_prob, reset_weights=reset_weights,
-                                     batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
-                                     variance_prior_mode=variance_prior_mode,variance_window=variance_window)
+        RecurrentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0, t=t,
+                                      optimizer=optimizer, n_epochs=n_epochs,
+                                      l2_regularization=l2_regularization, batch_size=batch_size,
+                                      kernel_initializer=kernel_initializer, init_model=False,
+                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
+                                      batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
+                                      variance_prior_mode=variance_prior_mode, variance_window=variance_window)
 
         if n_hidden is None:
             self.n_hidden = d
