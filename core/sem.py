@@ -3,7 +3,7 @@ import tensorflow as tf
 from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
-from .utils import delete_object_attributes
+from .utils import delete_object_attributes, processify
 
 # there are a ~ton~ of tf warnings from Keras, suppress them here
 import os
@@ -632,3 +632,43 @@ class SEM(object):
         delete_object_attributes(self.results)
         delete_object_attributes(self)
 
+
+
+@processify
+def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
+    """ this initailizes SEM, runs the main function 'run', and
+    returns the results object within a seperate process. 
+    
+    See help on SEM class and on subfunction 'run' for more detail on the 
+    parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
+    
+    """
+    
+    if sem_init_kwargs is None:
+        sem_init_kwargs=dict()
+    if run_kwargs is None:
+        run_kwargs=dict()
+    
+    sem_model = SEM(**sem_init_kwargs)
+    sem_model.run(x, **run_kwargs)
+    return sem_model.results
+
+
+@processify
+def sem_run_with_boundaries(x, sem_init_kwargs=None, run_kwargs=None):
+    """ this initailizes SEM, runs the main function 'run', and
+    returns the results object within a seperate process.
+    
+    See help on SEM class and on subfunction 'run_w_boundaries' for more detail on the 
+    parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
+
+    """
+    
+    if sem_init_kwargs is None:
+        sem_init_kwargs=dict()
+    if run_kwargs is None:
+        run_kwargs=dict()
+    
+    sem_model = SEM(**sem_init_kwargs)
+    sem_model.run_w_boundaries(x, **run_kwargs)
+    return sem_model.results
