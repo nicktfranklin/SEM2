@@ -713,44 +713,44 @@ class GRUEvent(RecurrentLinearEvent):
                   kernel_initializer=self.kernel_initializer))
         self.model.compile(**self.compile_opts)
 
+# depricating the layers with normalized outputs -- this seems to be unneeded with proper training
+# class GRUEvent_normed(RecurrentLinearEvent):
 
-class GRUEvent_normed(RecurrentLinearEvent):
+    # def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
+    #              n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
+    #              kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
+    #              batch_update=True, optimizer_kwargs=None, variance_prior_mode=None,variance_window=None):
 
-    def __init__(self, d, var_df0=None, var_scale0=None, t=3, n_hidden=None, optimizer=None,
-                 n_epochs=10, dropout=0.50, l2_regularization=0.00, batch_size=32,
-                 kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
-                 batch_update=True, optimizer_kwargs=None, variance_prior_mode=None,variance_window=None):
+    #     RecurrentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0, t=t,
+    #                                   optimizer=optimizer, n_epochs=n_epochs,
+    #                                   l2_regularization=l2_regularization, batch_size=batch_size,
+    #                                   kernel_initializer=kernel_initializer, init_model=False,
+    #                                   prior_log_prob=prior_log_prob, reset_weights=reset_weights,
+    #                                   batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
+    #                                   variance_prior_mode=variance_prior_mode, variance_window=variance_window)
 
-        RecurrentLinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0, t=t,
-                                      optimizer=optimizer, n_epochs=n_epochs,
-                                      l2_regularization=l2_regularization, batch_size=batch_size,
-                                      kernel_initializer=kernel_initializer, init_model=False,
-                                      prior_log_prob=prior_log_prob, reset_weights=reset_weights,
-                                      batch_update=batch_update, optimizer_kwargs=optimizer_kwargs,
-                                      variance_prior_mode=variance_prior_mode, variance_window=variance_window)
+    #     if n_hidden is None:
+    #         self.n_hidden = d
+    #     else:
+    #         self.n_hidden = n_hidden
+    #     self.dropout = dropout
 
-        if n_hidden is None:
-            self.n_hidden = d
-        else:
-            self.n_hidden = n_hidden
-        self.dropout = dropout
+    #     if init_model:
+    #         self.init_model()
 
-        if init_model:
-            self.init_model()
-
-    def _compile_model(self):
-        self.model = Sequential()
-        # input_shape[0] = timesteps; we pass the last self.t examples for train the hidden layer
-        # input_shape[1] = input_dim; each example is a self.d-dimensional vector
-        self.model.add(GRU(self.n_hidden, input_shape=(self.t, self.d),
-                                 kernel_regularizer=self.kernel_regularizer,
-                                 kernel_initializer=self.kernel_initializer))
-        self.model.add(LeakyReLU(alpha=0.3))
-        self.model.add(Dropout(rate=self.dropout))
-        self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
-                  kernel_initializer=self.kernel_initializer))
-        self.model.add(Lambda(lambda x: l2_normalize(x, axis=-1)))  
-        self.model.compile(**self.compile_opts)
+    # def _compile_model(self):
+    #     self.model = Sequential()
+    #     # input_shape[0] = timesteps; we pass the last self.t examples for train the hidden layer
+    #     # input_shape[1] = input_dim; each example is a self.d-dimensional vector
+    #     self.model.add(GRU(self.n_hidden, input_shape=(self.t, self.d),
+    #                              kernel_regularizer=self.kernel_regularizer,
+    #                              kernel_initializer=self.kernel_initializer))
+    #     self.model.add(LeakyReLU(alpha=0.3))
+    #     self.model.add(Dropout(rate=self.dropout))
+    #     self.model.add(Dense(self.d, activation=None, kernel_regularizer=self.kernel_regularizer,
+    #               kernel_initializer=self.kernel_initializer))
+    #     self.model.add(Lambda(lambda x: l2_normalize(x, axis=-1)))  
+    #     self.model.compile(**self.compile_opts)
 
 
 
