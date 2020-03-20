@@ -31,14 +31,6 @@ all be run in Google colab (the accompanying jupyter notebooks have been pre-run
     
     &nbsp;
 
-* Demo - Motion Capture Data.ipynb
-    
-    Simulations of the SEM model on the 3D motion capture data. 
-    
-    <a href="https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Demo%20-%20Motion%20Capture%20Data.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
-    
-    &nbsp;
-
 * Segmentation - Generalizing Structure
 
     a demonstratation of how the HRR and Bayesian inference are used to generalize structure when delineating event boundaries.
