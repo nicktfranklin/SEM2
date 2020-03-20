@@ -7,7 +7,8 @@ Get these working in google colab reliably
 
 ## Requirements
 This code has been tested in Python v3.7.3 and requires the following libraries:
-* Tensorflow v1.14
+* Tensorflow v2.1
 * Ananconda python
+* tqdm
 
 A more complete list of the dependencies need can be found in the requirements.txt file.
