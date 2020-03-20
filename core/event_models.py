@@ -175,7 +175,7 @@ class LinearEvent(object):
 
     def do_reset_weights(self):
         new_weights = [
-            self.model.layers[0].kernel_initializer(w.shape).eval(session=tf.compat.v1.Session())
+            self.model.layers[0].kernel_initializer(w.shape)
                 for w in self.model.get_weights()
         ]
         self.model.set_weights(new_weights)
@@ -503,7 +503,7 @@ class RecurrentLinearEvent(LinearEvent):
         # # self._compile_model()
         if self.init_weights is None:
             new_weights = [
-                self.model.layers[0].kernel_initializer(w.shape).eval(session=tf.compat.v1.Session())
+                self.model.layers[0].kernel_initializer(w.shape)
                  for w in self.model.get_weights()
             ]
             self.model.set_weights(new_weights)
