@@ -8,7 +8,7 @@ all be run in Google colab (the accompanying jupyter notebooks have been pre-run
 
     This brief tutorial walks through some basic functions of segmentation and the memory model in a toy 2-d world.  This also includes a comparison between SEM and an HMM in Memory.
     
-    <a href="https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Demo%20-%20Segmentation%20and%20Memory%20Tutorial.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
+    <a href="https://colab.research.google.com/github/nicktfranklin/SEM2/blob/master/Tutorials%20and%20Demos/Demo%20-%20Segmentation%20and%20Memory%20Tutorial.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
 
     &nbsp;
 
@@ -19,7 +19,7 @@ all be run in Google colab (the accompanying jupyter notebooks have been pre-run
     These simulations demonstrate how SEM can segement simple, 2D dynamical systems with
     various different methods of estimating the event dynamics of the system.
     
-    <a href="https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Demo%20-%20Toy%20Data%20(Segmentation).ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
+    <a href="https://colab.research.google.com/github/nicktfranklin/SEM2/blob/master/Tutorials%20and%20Demos/Demo%20-%20Toy%20Data%20(Segmentation).ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
      
      &nbsp;
 
@@ -27,7 +27,7 @@ all be run in Google colab (the accompanying jupyter notebooks have been pre-run
 
     Demonstration of the Holographic reduced representation
     
-    <a href=https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Demo%20-%20HRR.ipynb><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
+    <a href=https://colab.research.google.com/github/nicktfranklin/SEM2/blob/master/Tutorials%20and%20Demos/Demo%20-%20HRR.ipynb><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
     
     &nbsp;
 
@@ -35,10 +35,10 @@ all be run in Google colab (the accompanying jupyter notebooks have been pre-run
 
     a demonstratation of how the HRR and Bayesian inference are used to generalize structure when delineating event boundaries.
 
-    <a href="https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Segmentation%20-%20Generalizing%20Structure.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
+    <a href="https://colab.research.google.com/github/nicktfranklin/SEM2/blob/master/Tutorials%20and%20Demos/Segmentation%20-%20Generalizing%20Structure.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
 
 * Segmentation - Video (Dishes)
     
     This is a simulation that shows how the model performs segmenting video data that has been preprocessed with a variational autoencoder.
 
-    <a href="https://colab.research.google.com/github/nicktfranklin/SEM3/blob/master/Tutorials%20and%20Demos/Segmentation%20-%20Video%20(Dishes).ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
+    <a href="https://colab.research.google.com/github/nicktfranklin/SEM2/blob/master/Tutorials%20and%20Demos/Segmentation%20-%20Video%20(Dishes).ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab" title="Open and Execute in Google Colaboratory"></a>
