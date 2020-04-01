@@ -350,7 +350,7 @@ class SEM(object):
 
         return post
 
-    def update_single_event(self, x, update=True, save_x_hat=False, generative_predicitons=False, aggregator=np.sum):
+    def update_single_event(self, x, update=True, save_x_hat=False):
         """
 
         :param x: this is an n x d array of the n scenes in an event
@@ -376,9 +376,7 @@ class SEM(object):
                 if save_x_hat:
                     x_hat = np.zeros((n_scene, self.d))
                     sigma = np.zeros((n_scene, self.d))
-                    scene_log_like = np.zeros((n_scene, self.k)) - np.inf # for debugging only
-                if generative_predicitons:
-                    x_hat_gen = np.zeros((n_scene, self.d))
+                    scene_log_like = np.zeros((n_scene, self.k)) - np.inf # for debugging
 
             else:
                 post = self.results.post
@@ -387,9 +385,7 @@ class SEM(object):
                 if save_x_hat:
                     x_hat = self.results.x_hat
                     sigma = self.results.sigma
-                    scene_log_like = self.results.scene_log_like  # for debugging only
-                if generative_predicitons:
-                    x_hat_gen = self.results.x_hat_gen
+                    scene_log_like = self.results.scene_log_like  # for debugging
 
                 # extend the size of the posterior, etc
 
@@ -414,8 +410,6 @@ class SEM(object):
                     sigma = np.concatenate([sigma, np.zeros((n_scene, self.d))], axis=0)
                     scene_log_like = np.concatenate([scene_log_like, np.zeros((n_scene, self.k)) - np.inf], axis=0)
 
-                if generative_predicitons:
-                    x_hat_gen = np.concatenate([x_hat_gen, np.zeros((n_scene, self.d))], axis=0)
         else:
             log_like = np.zeros((1, self.k)) - np.inf
             log_prior = np.zeros((1, self.k)) - np.inf
@@ -429,16 +423,10 @@ class SEM(object):
 
         # again, this is a readout of the model only and not used for updating,
         # but also keep track of the within event posterior
-        map_prediction = np.zeros(np.shape(x))
-        k_within_event = np.argmax(prior)  # prior to the first scene within an event having been observed, the
-        # prior determines what the event type will be
-
         if save_x_hat:
             _x_hat = np.zeros((n_scene, self.d))  # temporary storre
             _sigma = np.zeros((n_scene, self.d))
 
-        if generative_predicitons:
-            _x_hat_gen = np.zeros((n_scene, self.d)) 
 
         for ii, x_curr in enumerate(x):
 
@@ -452,7 +440,8 @@ class SEM(object):
             else:
                 event_boundary = False
 
-            # loop through each potentially active event model
+            # loop through each potentially active event model and verify 
+            # a model has been initialized
             for k0 in active:
                 if k0 not in self.event_models.keys():
                     new_model = self.f_class(self.d, **self.f_opts)
@@ -462,6 +451,26 @@ class SEM(object):
                         new_model.set_model(self.model)
                     self.event_models[k0] = new_model
 
+            ### ~~~~~ Start ~~~~~~~###
+
+            ## prior to updating, pull x_hat based on the ongoing estimate of the event label
+            if ii == 0:
+                # prior to the first scene within an event having been observed
+                k_within_event = np.argmax(prior)  
+            else:
+                # otherwise, use previously observed scenes
+                k_within_event = np.argmax(np.sum(lik[:ii, :len(active)], axis=0) + np.log(prior[:len(active)]))
+            
+            if save_x_hat:
+                if event_boundary:
+                    _x_hat[ii, :] = self.event_models[k_within_event].predict_f0()
+                else:
+                    _x_hat[ii, :] = self.event_models[k_within_event].predict_next_generative(x[:ii, :])
+                _sigma[ii, :] = self.event_models[k_within_event].get_variance()
+
+
+            ## Update the model, inference first!
+            for k0 in active:
                 # get the log likelihood for each event model
                 model = self.event_models[k0]
 
@@ -471,38 +480,11 @@ class SEM(object):
                     lik[ii, k0] = model.log_likelihood_sequence(x[:ii, :].reshape(-1, self.d), x_curr)
                 else:
                     lik[ii, k0] = model.log_likelihood_f0(x_curr)
-                # print(lik)
+            
 
-            # here, get the MAP prediction.  This considers what the MAP hypothesis, within the event
-            # and generates a point-estimate arround that.
-            if event_boundary:
-                map_prediction[ii, :] = self.event_models[k_within_event].predict_f0()
-            else:
-                map_prediction[ii, :] = self.event_models[k_within_event].predict_next_generative(x[:ii, :])
-
-            # for the purpose of calculating a prediction error and a prediction error only, calculate
-            # a within event estimate of the event type (the real estimate is at the end of the event,
-            # taking into account the accumulated evidence
-            k_within_event = np.argmax(np.sum(lik[:ii+1, :len(active)], axis=0) + np.log(prior[:len(active)]))
-            if save_x_hat:
-                model = self.event_models[k_within_event]
-                _sigma[ii, :] = model.get_variance()
-                if ii > 0:
-                    _x_hat[ii, :] = model.predict_next_generative(x[:ii, :])
-                else:
-                    _x_hat[ii, :] = model.predict_f0()
-
-            if ii == 1 and generative_predicitons:
-                # create a generative prediction of the model, conditioned on the first experienced scene
-                # for now, this is code specific to silvy's simulations
-                model = self.event_models[k_within_event]
-                _x_hat_gen[0, :] = x[0, :]
-                _x_hat_gen[1, :] = x[1, :]
-                for jj in range(2, n_scene):
-                    _x_hat_gen[jj, :] = model.predict_next_generative(x[:jj, :])
 
         # cache the diagnostic measures
-        log_like[-1, :len(active)] = aggregator(lik, axis=0)
+        log_like[-1, :len(active)] = np.sum(lik, axis=0)
 
         # calculate the log prior
         log_prior[-1, :len(active)] = np.log(prior[:len(active)])
@@ -543,11 +525,7 @@ class SEM(object):
                 self.results.sigma = sigma
                 self.results.scene_log_like = scene_log_like
 
-            if generative_predicitons:
-                x_hat_gen[-n_scene:, :] = _x_hat_gen
-                self.results.x_hat_gen = x_hat_gen
-
-        return bayesian_surprise, map_prediction
+        return
 
     def init_for_boundaries(self, list_events):
         # update internal state
@@ -566,7 +544,7 @@ class SEM(object):
             self.event_models[0] = new_model
 
     def run_w_boundaries(self, list_events, progress_bar=True, leave_progress_bar=True, save_x_hat=False, 
-                         generative_predicitons=False, minimize_memory=False, aggregator=np.sum):
+                         generative_predicitons=False, minimize_memory=False):
         """
         This method is the same as the above except the event boundaries are pre-specified by the experimenter
         as a list of event tokens (the event/schema type is still inferred).
@@ -608,10 +586,7 @@ class SEM(object):
         self.init_for_boundaries(list_events)
 
         for x in my_it(list_events):
-            self.update_single_event(
-                x, save_x_hat=save_x_hat, generative_predicitons=generative_predicitons,
-                aggregator=aggregator
-                )
+            self.update_single_event(x, save_x_hat=save_x_hat)
         if minimize_memory:
             self.clear_event_models()
 
