@@ -2,11 +2,20 @@
 
 This the current working build of the *Structured Event Memory* (SEM) model, originally presented in Franklin et al., 2019 https://doi.org/10.1101/541607](https://doi.org/10.1101/541607).  For the simulations that ocompany the paper, please see our earlier github repository https://github.com/ProjectSEM/SEM](https://github.com/ProjectSEM/SEM), which is maintained for archival purposes.
 
+## Tutorials and Demonstrations
+The tutorials run in Google Colab and don't require local installation.  These will download and install the SEM2 package
 
-## Requirements
-This code has been tested in Python v3.7.3 and requires the following libraries:
-* Tensorflow v2.1
-* Ananconda python
-* tqdm
+## Installation Requirements
+This package has been tested in Python v3.6 and relies on tensorflow. 
 
-A more complete list of the dependencies need can be found in the requirements.txt file.
+To install, use the command: 
+`pip install git+https://github.com/nicktfranklin/SEM2`
+
+SEM can then be used in python as a package.  To import SEM:
+`>>import sem`
+
+
+The demonstrations require addtional plotting libraries (found in the requirements.txt file). These can be installed via
+`pip install -r requirements.txt`
+
+
