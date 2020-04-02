@@ -9,13 +9,16 @@ The tutorials run in Google Colab and don't require local installation.  These w
 This package has been tested in Python v3.6 and relies on tensorflow. 
 
 To install, use the command: 
+
 `pip install git+https://github.com/nicktfranklin/SEM2`
 
 SEM can then be used in python as a package.  To import SEM:
+
 `>>import sem`
 
 
 The demonstrations require addtional plotting libraries (found in the requirements.txt file). These can be installed via
+
 `pip install -r requirements.txt`
 
 
