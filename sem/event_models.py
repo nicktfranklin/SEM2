@@ -130,8 +130,8 @@ class LinearEvent(object):
         self.compile_opts = dict(optimizer=optimizer, loss='mean_squared_error')
         self.kernel_initializer = kernel_initializer
         self.kernel_regularizer = regularizers.l2(l2_regularization)
-        self.n_epochs = n_epochs
-        self.batch_size = batch_size
+        self.n_epochs = int(n_epochs)
+        self.batch_size = int(batch_size)
 
         self.d = d
         self.reset_weights = reset_weights
