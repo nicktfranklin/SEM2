@@ -489,8 +489,8 @@ class SEM(object):
         # calculate the log prior
         log_prior[-1, :len(active)] = np.log(prior[:len(active)])
 
-        # calculate surprise
-        bayesian_surprise = logsumexp(lik + np.tile(log_prior[-1, :len(active)], (np.shape(lik)[0], 1)), axis=1)
+        # # calculate surprise
+        # bayesian_surprise = logsumexp(lik + np.tile(log_prior[-1, :len(active)], (np.shape(lik)[0], 1)), axis=1)
 
         if update:
 
