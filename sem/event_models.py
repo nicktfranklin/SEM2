@@ -149,6 +149,12 @@ class LinearEvent(object):
         if init_model:
             self.init_model()
 
+        # generate a vector to act as a placeholder for time-points
+        # prior to the start of the event so as to allow the network 
+        # to implicitly learn a hidden state. We'll assume this
+        # vector has length appox equal to 1
+        self.filler_vector = np.random.randn(self.d) / np.sqrt(self.d)
+
     def clear(self):
         delete_object_attributes(self)
 
@@ -216,7 +222,7 @@ class LinearEvent(object):
             self.f_is_trained = True
 
     def update_f0(self, Xp, update_estimate=True):
-        self.update(np.zeros(self.d), Xp, update_estimate=update_estimate)
+        self.update(self.filler_vector, Xp, update_estimate=update_estimate)
         self.f0_is_trained = True
 
         # precompute f0 for speed
@@ -269,7 +275,7 @@ class LinearEvent(object):
         return self.f0
 
     def _predict_f0(self):
-        return self._predict_next(np.zeros(self.d))
+        return self._predict_next(self.filler_vector)
 
     def log_likelihood_f0(self, Xp):
 
@@ -498,6 +504,11 @@ class RecurrentLinearEvent(LinearEvent):
 
         # cache the initial weights for retraining speed
         self.init_weights = None
+        # generate a vector to act as a placeholder for time-points
+        # prior to the start of the event so as to allow the network 
+        # to implicitly learn a hidden state. We'll assume this
+        # vector has length appox equal to 1
+        self.filler_vector = np.random.randn(self.d) / np.sqrt(self.d)
 
     def do_reset_weights(self):
         # # self._compile_model()
@@ -515,7 +526,7 @@ class RecurrentLinearEvent(LinearEvent):
     # initialize model once so we can then update it online
     def _compile_model(self):
         self.model = Sequential()
-        self.model.add(SimpleRNN(self.d, input_shape=(self.t, self.d),
+        self.model.add(SimpleRNN(self.d, input_shape=(None, self.d),
                                  activation=None, kernel_initializer=self.kernel_initializer,
                                  kernel_regularizer=self.kernel_regularizer))
         self.model.compile(**self.compile_opts)
@@ -525,8 +536,8 @@ class RecurrentLinearEvent(LinearEvent):
     #
     def _unroll(self, x_example):
         x_train = np.concatenate([self.x_history[-1][-(self.t - 1):, :], x_example], axis=0)
-        x_train = np.concatenate([np.zeros((self.t - x_train.shape[0], self.d)), x_train], axis=0)
-        x_train = x_train.reshape((1, self.t, self.d))
+        # x_train = np.concatenate([self.filler_vector, x_train], axis=0)
+        x_train = x_train.reshape((1, np.min([x_train.shape[0], self.t]), self.d))
         return x_train
 
     # predict a single example
@@ -547,7 +558,7 @@ class RecurrentLinearEvent(LinearEvent):
         return self.model.predict(x_test)
 
     def _predict_f0(self):
-        return self.predict_next_generative(np.zeros(self.d))
+        return self.predict_next_generative(self.filler_vector)
 
     def _update_variance(self):
         if np.shape(self.prediction_errors)[0] > 1:
@@ -666,7 +677,7 @@ class RecurrentEvent(RecurrentLinearEvent):
         self.model = Sequential()
         # input_shape[0] = timesteps; we pass the last self.t examples for train the hidden layer
         # input_shape[1] = input_dim; each example is a self.d-dimensional vector
-        self.model.add(SimpleRNN(self.n_hidden, input_shape=(self.t, self.d),
+        self.model.add(SimpleRNN(self.n_hidden, input_shape=(None, self.d),
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
@@ -704,7 +715,7 @@ class GRUEvent(RecurrentLinearEvent):
         self.model = Sequential()
         # input_shape[0] = timesteps; we pass the last self.t examples for train the hidden layer
         # input_shape[1] = input_dim; each example is a self.d-dimensional vector
-        self.model.add(GRU(self.n_hidden, input_shape=(self.t, self.d),
+        self.model.add(GRU(self.n_hidden, input_shape=(None, self.d),
                                  kernel_regularizer=self.kernel_regularizer,
                                  kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
@@ -792,7 +803,7 @@ class LSTMEvent(RecurrentLinearEvent):
         self.model = Sequential()
         # input_shape[0] = time-steps; we pass the last self.t examples for train the hidden layer
         # input_shape[1] = input_dim; each example is a self.d-dimensional vector
-        self.model.add(LSTM(self.n_hidden, input_shape=(self.t, self.d),
+        self.model.add(LSTM(self.n_hidden, input_shape=(None, self.d),
                            kernel_regularizer=self.kernel_regularizer,
                            kernel_initializer=self.kernel_initializer))
         self.model.add(LeakyReLU(alpha=0.3))
