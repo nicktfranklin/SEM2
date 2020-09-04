@@ -228,6 +228,9 @@ class SEM(object):
             active = np.nonzero(prior)[0]
             lik = np.zeros(len(active))
 
+            # store the predicted vector
+            x_hat_active = None
+
             for k0 in active:
                 if k0 not in self.event_models.keys():
                     new_model = self.f_class(self.d, **self.f_opts)
@@ -244,9 +247,10 @@ class SEM(object):
                 # detect when there is a change in event types (not the same thing as boundaries)
                 current_event = (k0 == self.k_prev)
 
+
                 if current_event:
                     assert self.x_prev is not None
-                    lik[k0] = model.log_likelihood_next(self.x_prev, x_curr)
+                    lik[k0], x_hat_active = model.log_likelihood_next(self.x_prev, x_curr)
 
                     # special case for the possibility of returning to the start of the current event
                     lik_restart_event = model.log_likelihood_f0(x_curr)
@@ -305,9 +309,9 @@ class SEM(object):
             if not minimize_memory:
                 # prediction error: euclidean distance of the last model and the current scene vector
                 if ii > 0:
-                    model = self.event_models[self.k_prev]
-                    x_hat[ii, :] = model.predict_next(self.x_prev)
-                    pe[ii] = np.linalg.norm(x_curr - x_hat[ii, :])
+                    # model = self.event_models[self.k_prev]
+                    x_hat[ii, :] = x_hat_active
+                    pe[ii] = np.linalg.norm(x_curr - x_hat_active)
                     # surprise[ii] = log_like[ii, self.k_prev]
 
             self.c[k] += 1  # update counts

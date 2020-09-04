@@ -285,7 +285,7 @@ class LinearEvent(object):
             else: 
                 return norm(0, self.variance_prior_mode ** 0.5).logpdf(Xp).sum()
 
-        # predict the initial point
+        # predict the initial point (# this has been precomputed for speed)
         Xp_hat = self.predict_f0()
 
         # return the probability
@@ -299,7 +299,8 @@ class LinearEvent(object):
                 return norm(0, self.variance_prior_mode ** 0.5).logpdf(Xp).sum()
 
         Xp_hat = self.predict_next(X)
-        return fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
+        LL = fast_mvnorm_diagonal_logprob(Xp.reshape(-1) - Xp_hat.reshape(-1), self.Sigma)
+        return Xp_hat, LL
 
     def log_likelihood_sequence(self, X, Xp):
         if not self.f_is_trained:
