@@ -250,7 +250,7 @@ class SEM(object):
 
                 if current_event:
                     assert self.x_prev is not None
-                    lik[k0], x_hat_active = model.log_likelihood_next(self.x_prev, x_curr)
+                    x_hat_active, lik[k0] = model.log_likelihood_next(self.x_prev, x_curr)
 
                     # special case for the possibility of returning to the start of the current event
                     lik_restart_event = model.log_likelihood_f0(x_curr)
