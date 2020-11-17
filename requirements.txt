@@ -1,7 +1,7 @@
 numpy
 scipy
 tqdm
-tensorflow==2.1.0
+tensorflow
 sklearn
 matplotlib
 seaborn

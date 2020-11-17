@@ -116,6 +116,7 @@ def processify(func):
 
     # register original function with different name
     # in sys.modules so it is pickable
+    # NTF 11/17/20: this hack is no longer working and the wrapper no longer works!
     process_func.__name__ = func.__name__ + 'processify_func'
     setattr(sys.modules[__name__], process_func.__name__, process_func)
 

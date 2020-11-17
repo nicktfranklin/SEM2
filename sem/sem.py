@@ -613,13 +613,17 @@ class SEM(object):
 
 
 
-@processify
+# @processify
 def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
     """ this initailizes SEM, runs the main function 'run', and
     returns the results object within a seperate process. 
     
     See help on SEM class and on subfunction 'run' for more detail on the 
     parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
+
+    Update (11/17/20): The processify function has been depricated, so this 
+    function no longer generates a seperate process.
+
     
     """
     
@@ -633,13 +637,16 @@ def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
     return sem_model.results
 
 
-@processify
+# @processify
 def sem_run_with_boundaries(x, sem_init_kwargs=None, run_kwargs=None):
     """ this initailizes SEM, runs the main function 'run', and
     returns the results object within a seperate process.
     
     See help on SEM class and on subfunction 'run_w_boundaries' for more detail on the 
     parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
+
+    Update (11/17/20): The processify function has been depricated, so this 
+    function no longer generates a seperate process.
 
     """
     

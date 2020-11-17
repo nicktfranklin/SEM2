@@ -480,7 +480,8 @@ class RecurrentLinearEvent(LinearEvent):
     def __init__(self, d, var_df0=None, var_scale0=None, t=3,
                  optimizer=None, n_epochs=10, l2_regularization=0.00, batch_size=32,
                  kernel_initializer='glorot_uniform', init_model=False, prior_log_prob=None, reset_weights=False,
-                 batch_update=True, optimizer_kwargs=None,variance_prior_mode=None,variance_window=None):
+                 batch_update=True, optimizer_kwargs=None,variance_prior_mode=None, 
+                 variance_window=None):
 
         LinearEvent.__init__(self, d, var_df0=var_df0, var_scale0=var_scale0,
                              optimizer=optimizer, n_epochs=n_epochs,
