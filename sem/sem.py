@@ -3,7 +3,7 @@ import tensorflow as tf
 from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
-from .utils import delete_object_attributes, processify
+from .utils import delete_object_attributes
 from multiprocessing import Queue, Process
 
 # there are a ~ton~ of tf warnings from Keras, suppress them here
