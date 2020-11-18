@@ -90,48 +90,48 @@ def delete_object_attributes(myobj):
         attr = [k for k in myobj.__dict__.keys()][0]
         myobj.__delattr__(attr)
     
+### UPDATE, 11/17/20: Code below does not work with python 3.7+ (at least)
+# def processify(func):
+#     '''Decorator to run a function as a process.
+#     Be sure that every argument and the return value
+#     is *pickable*.
+#     The created process is joined, so the code does not
+#     run in parallel.
 
-def processify(func):
-    '''Decorator to run a function as a process.
-    Be sure that every argument and the return value
-    is *pickable*.
-    The created process is joined, so the code does not
-    run in parallel.
+#     Credit: I took this function from Marc Schlaich's github:
+#     https://gist.github.com/schlamar/2311116
+#     '''
 
-    Credit: I took this function from Marc Schlaich's github:
-    https://gist.github.com/schlamar/2311116
-    '''
+#     def process_func(q, *args, **kwargs):
+#         try:
+#             ret = func(*args, **kwargs)
+#         except Exception:
+#             ex_type, ex_value, tb = sys.exc_info()
+#             error = ex_type, ex_value, ''.join(traceback.format_tb(tb))
+#             ret = None
+#         else:
+#             error = None
 
-    def process_func(q, *args, **kwargs):
-        try:
-            ret = func(*args, **kwargs)
-        except Exception:
-            ex_type, ex_value, tb = sys.exc_info()
-            error = ex_type, ex_value, ''.join(traceback.format_tb(tb))
-            ret = None
-        else:
-            error = None
+#         q.put((ret, error))
 
-        q.put((ret, error))
+#     # register original function with different name
+#     # in sys.modules so it is pickable
+#     # NTF 11/17/20: this hack is no longer working and the wrapper no longer works!
+#     process_func.__name__ = func.__name__ + 'processify_func'
+#     setattr(sys.modules[__name__], process_func.__name__, process_func)
 
-    # register original function with different name
-    # in sys.modules so it is pickable
-    # NTF 11/17/20: this hack is no longer working and the wrapper no longer works!
-    process_func.__name__ = func.__name__ + 'processify_func'
-    setattr(sys.modules[__name__], process_func.__name__, process_func)
+#     @wraps(func)
+#     def wrapper(*args, **kwargs):
+#         q = Queue()
+#         p = Process(target=process_func, args=[q] + list(args), kwargs=kwargs)
+#         p.start()
+#         ret, error = q.get()
+#         p.join()
 
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        q = Queue()
-        p = Process(target=process_func, args=[q] + list(args), kwargs=kwargs)
-        p.start()
-        ret, error = q.get()
-        p.join()
+#         if error:
+#             ex_type, ex_value, tb_str = error
+#             message = '%s (in subprocess)\n%s' % (ex_value.message, tb_str)
+#             raise ex_type(message)
 
-        if error:
-            ex_type, ex_value, tb_str = error
-            message = '%s (in subprocess)\n%s' % (ex_value.message, tb_str)
-            raise ex_type(message)
-
-        return ret
-    return wrapper
+#         return ret
+#     return wrapper

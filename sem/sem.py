@@ -4,6 +4,7 @@ from scipy.special import logsumexp
 from tqdm import tqdm
 from .event_models import GRUEvent
 from .utils import delete_object_attributes, processify
+from multiprocessing import Queue, Process
 
 # there are a ~ton~ of tf warnings from Keras, suppress them here
 import os
@@ -611,22 +612,7 @@ class SEM(object):
         delete_object_attributes(self.results)
         delete_object_attributes(self)
 
-
-
-# @processify
-def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
-    """ this initailizes SEM, runs the main function 'run', and
-    returns the results object within a seperate process. 
-    
-    See help on SEM class and on subfunction 'run' for more detail on the 
-    parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
-
-    Update (11/17/20): The processify function has been depricated, so this 
-    function no longer generates a seperate process.
-
-    
-    """
-    
+def worker_run(queue, x, sem_init_kwargs=None, run_kwargs=None):
     if sem_init_kwargs is None:
         sem_init_kwargs=dict()
     if run_kwargs is None:
@@ -634,22 +620,24 @@ def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
     
     sem_model = SEM(**sem_init_kwargs)
     sem_model.run(x, **run_kwargs)
-    return sem_model.results
+    queue.put(sem_model.results)
 
-
-# @processify
-def sem_run_with_boundaries(x, sem_init_kwargs=None, run_kwargs=None):
-    """ this initailizes SEM, runs the main function 'run', and
+def sem_run(x, sem_init_kwargs=None, run_kwargs=None):
+    """ this initailizes SEM, runs the main function 'run_w_boundaries', and
     returns the results object within a seperate process.
     
     See help on SEM class and on subfunction 'run_w_boundaries' for more detail on the 
     parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
 
-    Update (11/17/20): The processify function has been depricated, so this 
-    function no longer generates a seperate process.
-
     """
     
+    q = Queue()
+    p = Process(target=worker_run, args=[q, x], 
+                kwargs=dict(sem_init_kwargs=sem_init_kwargs, run_kwargs=run_kwargs))
+    p.start()
+    return q.get()
+
+def worker_run_with_boundaries(queue, x, sem_init_kwargs=None, run_kwargs=None):
     if sem_init_kwargs is None:
         sem_init_kwargs=dict()
     if run_kwargs is None:
@@ -657,4 +645,22 @@ def sem_run_with_boundaries(x, sem_init_kwargs=None, run_kwargs=None):
     
     sem_model = SEM(**sem_init_kwargs)
     sem_model.run_w_boundaries(x, **run_kwargs)
-    return sem_model.results
+    queue.put(sem_model.results)
+
+def sem_run_with_boundaries(x, sem_init_kwargs=None, run_kwargs=None):
+    """ this initailizes SEM, runs the main function 'run_w_boundaries', and
+    returns the results object within a seperate process.
+    
+    See help on SEM class and on subfunction 'run_w_boundaries' for more detail on the 
+    parameters contained in 'sem_init_kwargs'  and 'run_kwargs', respectively.
+
+    """
+    
+    q = Queue()
+    p = Process(target=worker_run_with_boundaries, args=[q, x], 
+                kwargs=dict(sem_init_kwargs=sem_init_kwargs, run_kwargs=run_kwargs))
+    p.start()
+    return q.get()
+
+
+
