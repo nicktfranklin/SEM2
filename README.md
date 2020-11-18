@@ -6,7 +6,7 @@ This the current working build of the *Structured Event Memory* (SEM) model, ori
 The tutorials run in Google Colab and don't require local installation.  These will download and install the SEM2 package
 
 ## Installation Requirements
-This package has been tested in Python v3.6 and relies on tensorflow. 
+This package has been tested in Python v3.7.9 and tensorflow 2.3.1 
 
 To install, use the command: 
 
